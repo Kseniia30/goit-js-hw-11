@@ -1,74 +1,89 @@
-import { refs } from "./js/refs";
-import SimpleLightbox from "simplelightbox";
-import "simplelightbox/dist/simple-lightbox.min.css";
-import axios from "axios";
-import Notiflix from 'notiflix';
+import './css/styles.scss';
 
-const BASE_URL = "https://pixabay.com/api/"
-const key = "29746553-1bca6bd490352bbcaa49de9e7"
-const imageType = 'photo';
-const orientation = 'horizontal';
-const safesearch = 'true';
+import { Notify } from 'notiflix';
 
-class PixabayAPI {
-    constructor() {
-        this._perPage = 40;
-        this.searchQuery = '';
-        this._page = 1;
-        this.totalImages = 0;
-    }
+import { refs } from './js/refs';
+import { redrawInterface } from './js/redrawInterface';
 
-    fetchImages() {
-        const options = {
-            params: {
-                key,
-                q: this.searchQuery,
-                image_type: imageType,
-                orientation,
-                safesearch,
-                page: this._page,
-                per_page: this._perPage,
-            },
-        };
+import PixabayAPI from './js/pixabayAPI';
+import LoadMoreBtn from './js/loadMoreBtn';
 
-        const imagesData = axios.get(BASE_URL, options)
-            .then(res => {
-                const images = res.data.hits.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
-                    console.log({ webformatURL, largeImageURL, tags, likes, views, comments, downloads })
+refs.form.addEventListener('submit', onSubmit);
+refs.loadMoreBtn.addEventListener('click', onLoadMore);
 
-                    return { webformatURL, largeImageURL, tags, likes, views, comments, downloads }
-                })
-        })
-            return imagesData
-    }
+const pixabayAPI = new PixabayAPI();
+const loadMoreBtn = new LoadMoreBtn({
+  ref: refs.loadMoreBtn,
+  hide: true,
+});
 
-    incrementPage() {
-        this.page += 1;
-    }
+function onSubmit(e) {
+  e.preventDefault();
 
-    resetPage() {
-        this.page = 1;
-    }
+  const formData = new FormData(refs.form);
 
-    get query() {
-        return this.searchQuery;
-    }
+  pixabayAPI.query = formData.get('searchQuery');
+  pixabayAPI.resetPage();
 
-    set query(newQuery) {
-        this.searchQuery = newQuery;
-    }
+  redrawInterface();
+
+  if (!pixabayAPI.query) {
+    Notify.failure('Nothing loaded becose of empty search query');
+    return;
+  }
+
+  pixabayAPI
+    .fetchPictures()
+    .then(picData => {
+      if (picData.images.length === 0) {
+        Notify.failure('Sorry, there are no images matching your search query. Please try again.');
+        return;
+      }
+      pixabayAPI.totalImgs = picData.totalImages;
+
+      Notify.success(`Hooray! We found ${pixabayAPI.totalImgs} images.`);
+
+      redrawInterface(picData.images);
+
+      checkSearchResultEnd();
+    })
+    .catch(error => {
+      handlePromiseError(error);
+    });
 }
 
-const pixabayAPI = new PixabayAPI()
+function onLoadMore(e) {
+  e.preventDefault();
 
-refs.formField.addEventListener("submit", onSearch)
+  pixabayAPI
+    .fetchPictures()
+    .then(picData => {
+      redrawInterface(picData.images);
 
-function onSearch(evt) {
-    evt.preventDefault()
-
-    pixabayAPI.fetchImages()
+      checkSearchResultEnd();
+    })
+    .catch(error => {
+      handlePromiseError(error);
+    });
 }
 
+function checkSearchResultEnd() {
+  loadMoreBtn.show();
 
+  const arePicturesOver =
+    pixabayAPI.totalImgs > pixabayAPI.perPage * pixabayAPI.page ? false : true;
 
+  if (arePicturesOver) {
+    Notify.failure("We're sorry, but you've reached the end of search results.");
+    loadMoreBtn.hide();
+    return;
+  }
 
+  pixabayAPI.incrementPage();
+}
+
+function handlePromiseError(error) {
+  console.error('Oh, no, no, no...', error);
+  console.error(error.message);
+  console.dir(error);
+}
