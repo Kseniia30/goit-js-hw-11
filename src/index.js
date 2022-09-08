@@ -1,89 +1,89 @@
-import './css/styles.scss';
-
+import "./css/style.css"
+import { refs } from "./js/refs";
+import { createInterface } from "./js/createInterface";
+import LoadMoreBtn from "./js/loadMoreF";
+import PixabayAPI from "./js/fetchInfo";
+import SimpleLightbox from "simplelightbox";
+import "simplelightbox/dist/simple-lightbox.min.css";
 import { Notify } from 'notiflix';
 
-import { refs } from './js/refs';
-import { redrawInterface } from './js/redrawInterface';
+const pixabayAPI = new PixabayAPI()
+const loadMoreBTN = new LoadMoreBtn({
+    ref: refs.loadMoreBtn,
+    hide: true,
+})
 
-import PixabayAPI from './js/pixabayAPI';
-import LoadMoreBtn from './js/loadMoreBtn';
+refs.formField.addEventListener("submit", onSearch)
+refs.loadMoreBtn.addEventListener("click", onLoadMore)
 
-refs.form.addEventListener('submit', onSubmit);
-refs.loadMoreBtn.addEventListener('click', onLoadMore);
+function onSearch(evt) {
+    evt.preventDefault()
 
-const pixabayAPI = new PixabayAPI();
-const loadMoreBtn = new LoadMoreBtn({
-  ref: refs.loadMoreBtn,
-  hide: true,
-});
+    const formData = new FormData(refs.formField)
+    pixabayAPI.query = formData.get("searchQuery")
+    pixabayAPI.resetPage();
 
-function onSubmit(e) {
-  e.preventDefault();
+    createInterface()
 
-  const formData = new FormData(refs.form);
+    if (!pixabayAPI.query) {
+        Notify.failure("Sorry, there are no images matching your search query. Please try again.")
+        return
+    }
 
-  pixabayAPI.query = formData.get('searchQuery');
-  pixabayAPI.resetPage();
+    pixabayAPI.fetchImages()
+        .then(picData => {
+            if (picData.images.length === 0) {
+                Notify.failure("Sorry, there are no images matching your search query. Please try again.")
+                return
+            }
+            pixabayAPI.totalIMGS = picData.totalImages
 
-  redrawInterface();
+            Notify.success(`Hooray! We found ${pixabayAPI.totalIMGS} images.`)
 
-  if (!pixabayAPI.query) {
-    Notify.failure('Nothing loaded becose of empty search query');
-    return;
-  }
+            createInterface(picData.images);
+            const simpleLightBox = new SimpleLightbox('.link-card')
+            simpleLightBox.refresh();
+            endOfSearch()
+        }
+        )
+        .catch(error => {
+            getError(error)
+        })
+}
 
-  pixabayAPI
-    .fetchPictures()
-    .then(picData => {
-      if (picData.images.length === 0) {
-        Notify.failure('Sorry, there are no images matching your search query. Please try again.');
-        return;
-      }
-      pixabayAPI.totalImgs = picData.totalImages;
+function onLoadMore(evt) {
+    evt.preventDefault()
 
-      Notify.success(`Hooray! We found ${pixabayAPI.totalImgs} images.`);
-
-      redrawInterface(picData.images);
-
-      checkSearchResultEnd();
+    pixabayAPI.fetchImages()
+        .then(picData => {
+            createInterface(picData.images)
+            endOfSearch()
+        })
+        .catch(error => {
+        getError(error)
     })
-    .catch(error => {
-      handlePromiseError(error);
-    });
 }
 
-function onLoadMore(e) {
-  e.preventDefault();
+function endOfSearch() {
+    loadMoreBTN.show()
 
-  pixabayAPI
-    .fetchPictures()
-    .then(picData => {
-      redrawInterface(picData.images);
+    const overPic = pixabayAPI.totalIMGS > pixabayAPI.perPage * pixabayAPI.page ? false : true
+    
+    if (overPic) {
+        Notify.failure("We're sorry, but you've reached the end of search results.")
+        loadMoreBTN.hide()
+        return
+    }
 
-      checkSearchResultEnd();
-    })
-    .catch(error => {
-      handlePromiseError(error);
-    });
+    pixabayAPI.incrementPage()
 }
 
-function checkSearchResultEnd() {
-  loadMoreBtn.show();
-
-  const arePicturesOver =
-    pixabayAPI.totalImgs > pixabayAPI.perPage * pixabayAPI.page ? false : true;
-
-  if (arePicturesOver) {
-    Notify.failure("We're sorry, but you've reached the end of search results.");
-    loadMoreBtn.hide();
-    return;
-  }
-
-  pixabayAPI.incrementPage();
+function getError(error) {
+    console.error(error)
 }
 
-function handlePromiseError(error) {
-  console.error('Oh, no, no, no...', error);
-  console.error(error.message);
-  console.dir(error);
-}
+// const lightbox = new SimpleLightbox('.link-card', { 
+//     navText: "<>",
+//     captionsData: "alt",
+//     captionDelay: 250,
+// }).refresh()

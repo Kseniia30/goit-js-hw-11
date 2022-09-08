@@ -1,35 +1,32 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Homework 11</title>
+    <link rel="stylesheet" href="./css/style.css">
+    <title>Page title</title>
   </head>
   <body>
-    <header class="header">
+    <section class="container">
       <form class="search-form" id="search-form">
-        <input
-          autofocus
-          type="text"
-          name="searchQuery"
-          id="searchQuery"
-          autocomplete="off"
-          placeholder="Search images..."
-        />
+        <input type="text" name="searchQuery" autocomplete="off" placeholder="Search images..." />
         <button type="submit">Search</button>
       </form>
-    </header>
-
-    <main>
+    </section>
+    <section class="container">
       <div class="gallery">
         <!-- Карточки изображений -->
       </div>
-    </main>
-    <!-- <footer class="footer"> -->
-    <button type="button" class="load-more">Load more</button>
-    <!-- </footer> -->
+    </section>
+    <section class="load-more-container container">
+      <button type="button" class="load-more">Load more</button>
+    </section>
+    
 
-    <script src="index.js" type="module"></script>
+    
+
+    
+
+    <script src="./index.js" type="module"></script>
   </body>
 </html>
