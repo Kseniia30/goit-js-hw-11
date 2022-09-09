@@ -1,8 +1,10 @@
 import "./css/style.css"
-import { refs } from "./js/refs";
-import { createInterface } from "./js/createInterface";
-import LoadMoreBtn from "./js/loadMoreF";
 import PixabayAPI from "./js/fetchInfo";
+import { refs } from "./js/refs";
+import LoadMoreBtn from "./js/loadMoreF";
+import { createInterface } from "./js/createInterface";
+
+
 import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
 import { Notify } from 'notiflix';
@@ -12,78 +14,72 @@ const loadMoreBTN = new LoadMoreBtn({
     ref: refs.loadMoreBtn,
     hide: true,
 })
+const lightbox = new SimpleLightbox(".gallery a", {
+    navText: "<>",
+    captionDelay: 250,
+})
 
 refs.formField.addEventListener("submit", onSearch)
-refs.loadMoreBtn.addEventListener("click", onLoadMore)
+refs.loadMoreBtn.addEventListener("click", fetchImages)
 
 function onSearch(evt) {
-    evt.preventDefault()
+    evt.preventDefault();
 
-    const formData = new FormData(refs.formField)
-    pixabayAPI.query = formData.get("searchQuery")
-    pixabayAPI.resetPage();
+    const currentStatus = evt.currentTarget.elements.searchQuery.value.trim()
 
-    createInterface()
-
-    if (!pixabayAPI.query) {
-        Notify.failure("Sorry, there are no images matching your search query. Please try again.")
-        return
+    if (currentStatus === "") {
+        return Notify.failure("Sorry, there are no images matching your search query. Please try again.")
     }
 
+    pixabayAPI.searchQuery = currentStatus;
+    loadMoreBTN.show()
+    pixabayAPI.resetPage()
+    clearContainer()
+    fetchImages()
+}
+
+function clearContainer() {
+    refs.gallery.innerHTML = "";
+}
+
+function fetchImages() {
+    loadMoreBTN.hide()
     pixabayAPI.fetchImages()
-        .then(picData => {
-            if (picData.images.length === 0) {
+        .then(({ data }) => {
+            if (data.total === 0 && data.hits.length === 0) {
                 Notify.failure("Sorry, there are no images matching your search query. Please try again.")
                 return
             }
-            pixabayAPI.totalIMGS = picData.totalImages
+            appendMarkup(data)
+            onScrolling()
 
-            Notify.success(`Hooray! We found ${pixabayAPI.totalIMGS} images.`)
+            const { totalHits } = data;
 
-            createInterface(picData.images);
-            const simpleLightBox = new SimpleLightbox('.link-card')
-            simpleLightBox.refresh();
-            endOfSearch()
-        }
-        )
-        .catch(error => {
-            getError(error)
-        })
+            if (refs.gallery.children.length === totalHits) {
+                Notify.failure("We're sorry, but you've reached the end of search results.")
+            }
+            else {
+                loadMoreBTN.show()
+                Notify.success(`Hooray! We found ${totalHits} images.`)
+            }
+    }).catch(error => console.log(error))
 }
 
-function onLoadMore(evt) {
-    evt.preventDefault()
-
-    pixabayAPI.fetchImages()
-        .then(picData => {
-            createInterface(picData.images)
-            endOfSearch()
-        })
-        .catch(error => {
-        getError(error)
-    })
+function appendMarkup(data) {
+    refs.gallery.insertAdjacentHTML("beforeend", createInterface(data))
+    lightbox.refresh()
 }
 
-function endOfSearch() {
-    loadMoreBTN.show()
+function onScrolling() {
+    const { height: cardHeight } = refs.gallery.firstElementChild.getBoundingClientRect();
 
-    const overPic = pixabayAPI.totalIMGS > pixabayAPI.perPage * pixabayAPI.page ? false : true
-    
-    if (overPic) {
-        Notify.failure("We're sorry, but you've reached the end of search results.")
-        loadMoreBTN.hide()
-        return
-    }
-
-    pixabayAPI.incrementPage()
+    window.scrollBy({
+        top: cardHeight * 2,
+        behavior: "smooth",
+    });
 }
 
-function getError(error) {
-    console.error(error)
-}
 
-// const lightbox = new SimpleLightbox('.link-card', { 
-//     navText: "<>",
-//     captionsData: "alt",
-//     captionDelay: 250,
-// }).refresh()
+
+
+

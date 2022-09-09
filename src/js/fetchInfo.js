@@ -14,7 +14,7 @@ export default class PixabayAPI {
         this.totalImages = 0;
     }
 
-    fetchImages() {
+    async fetchImages() {
         const options = {
             params: {
                 key,
@@ -27,15 +27,15 @@ export default class PixabayAPI {
             }
         }
 
-        return axios.get(BASE_URL, options).then(res => {
-            const images = res.data.hits.map(({ webformatURL, largeImageURL, tags, likes, views, comments, downloads }) => {
-                return {webformatURL, largeImageURL, tags, likes, views, comments, downloads}
-            })
+        try {
+            const res = axios.get(BASE_URL, options)
+            this.incrementPage()
+            return res
+        }
 
-            const totalImages = res.data.totalHits;
-            const result = { totalImages, images }
-            return result
-        })
+        catch (error) {
+            console.log(error);
+        }
     }
 
     incrementPage() {
@@ -45,30 +45,4 @@ export default class PixabayAPI {
     resetPage() {
         this.page = 1;
     }
-
-    get query() {
-        return this.searchQuery;
-    }
-
-    set query(newQuery) {
-        this.searchQuery = newQuery.trim().split(' ').join('+');
-    }
-
-    get totalIMGS() {
-        return this.totalImages;
-    }
-
-    set totalIMGS(newTotalImages) {
-        this.totalImages = newTotalImages
-    }
-
-    get perPage() {
-        return this._perPage
-    }
-
-    set perPage(newPerPage) {
-        this._perPage = newPerPage
-    }
-
-    
 }
