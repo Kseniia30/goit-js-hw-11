@@ -49,6 +49,12 @@ a {
     margin-right: auto;
     margin-left: auto;
 }
+.search-container {
+    padding-top: 20px;
+    width: 100vw;
+    position: fixed;
+    background-image: linear-gradient(to right, rgb(219, 209, 195), rgb(187, 201, 165));
+}
 
 .search-form {
     text-align: center;
@@ -88,6 +94,7 @@ input[type="text"]:focus {
     flex-wrap: wrap;
     margin-right: -10px;
     margin-top: -10px;
+    padding-top: 50px;
 }
 
 .link-card {
