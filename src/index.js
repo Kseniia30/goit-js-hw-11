@@ -9,6 +9,7 @@ import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
 import { Notify } from 'notiflix';
 
+
 const pixabayAPI = new PixabayAPI()
 const loadMoreBTN = new LoadMoreBtn({
     ref: refs.loadMoreBtn,
@@ -28,7 +29,7 @@ function onSearch(evt) {
     const currentStatus = evt.currentTarget.elements.searchQuery.value.trim()
 
     if (currentStatus === "") {
-        return Notify.failure("Sorry, there are no images matching your search query. Please try again.")
+        return onFailure()
     }
 
     pixabayAPI.searchQuery = currentStatus;
@@ -47,7 +48,7 @@ function fetchImages() {
     pixabayAPI.fetchImages()
         .then(({ data }) => {
             if (data.total === 0 && data.hits.length === 0) {
-                Notify.failure("Sorry, there are no images matching your search query. Please try again.")
+                onFailure()
                 return
             }
             appendMarkup(data)
@@ -56,13 +57,13 @@ function fetchImages() {
             const { totalHits } = data;
 
             if (refs.gallery.children.length === totalHits) {
-                Notify.failure("We're sorry, but you've reached the end of search results.")
+                endOfSearch()
             }
             else {
-                loadMoreBTN.show()
-                Notify.success(`Hooray! We found ${totalHits} images.`)
+                loadMoreBTN.show();
+                Notify.success(`Hooray! We found ${totalHits} images.`);
             }
-    }).catch(error => console.log(error))
+    }).catch(error => console.log("we have some problems", error.message))
 }
 
 function appendMarkup(data) {
@@ -79,7 +80,10 @@ function onScrolling() {
     });
 }
 
+function onFailure() {
+    Notify.failure("Sorry, there are no images matching your search query. Please try again.")
+}
 
-
-
-
+function endOfSearch() {
+    Notify.failure("We're sorry, but you've reached the end of search results.")
+}

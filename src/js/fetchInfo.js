@@ -14,7 +14,7 @@ export default class PixabayAPI {
         this.totalImages = 0;
     }
 
-    async fetchImages() {
+    fetchImages() {
         const options = {
             params: {
                 key,
@@ -34,7 +34,7 @@ export default class PixabayAPI {
         }
 
         catch (error) {
-            console.log(error);
+            throw new Error(error);
         }
     }
 
