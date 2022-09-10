@@ -9,6 +9,9 @@ import SimpleLightbox from "simplelightbox";
 import "simplelightbox/dist/simple-lightbox.min.css";
 import { Notify } from 'notiflix';
 
+const failureMessage = "Sorry, there are no images matching your search query. Please try again.";
+const endSearchMessage = "We're sorry, but you've reached the end of search results.";
+
 
 const pixabayAPI = new PixabayAPI()
 const loadMoreBTN = new LoadMoreBtn({
@@ -81,9 +84,9 @@ function onScrolling() {
 }
 
 function onFailure() {
-    Notify.failure("Sorry, there are no images matching your search query. Please try again.")
+    Notify.failure(failureMessage)
 }
 
 function endOfSearch() {
-    Notify.failure("We're sorry, but you've reached the end of search results.")
+    Notify.failure(endSearchMessage)
 }
